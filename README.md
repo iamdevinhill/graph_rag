@@ -1,6 +1,6 @@
 # Graph RAG Application
 
-This application implements a Retrieval Augmented Generation (RAG) system using a graph database (Neo4j) for knowledge storage and retrieval. It supports PDF document processing and provides a web interface for document ingestion and querying.
+This application implements a Retrieval Augmented Generation (RAG) system using a graph database (Neo4j) for knowledge storage and retrieval. It supports PDF document processing and provides a web interface for document ingestion and querying. The application features real-time streaming responses for an interactive chat experience.
 
 ## Prerequisites
 
@@ -67,6 +67,7 @@ streamlit run app/frontend/app.py
 - PDF document ingestion and processing
 - Document embedding and vector storage
 - Graph-based knowledge storage in Neo4j
+- Real-time streaming responses for chat
 - Semantic search capabilities
 - RAG-powered question answering
 - Interactive web interface
@@ -78,8 +79,23 @@ The FastAPI backend provides the following endpoints:
 
 - `POST /api/documents/upload`: Upload and process PDF documents
 - `GET /api/documents`: List all processed documents
-- `POST /api/query`: Submit questions for RAG-based answering
+- `POST /api/query`: Submit questions for RAG-based answering (supports streaming)
 - `GET /api/search`: Perform semantic search across documents
+- `GET /api/health`: Health check endpoint
+
+## Streaming Responses
+
+The application implements Server-Sent Events (SSE) for real-time streaming of responses:
+
+1. **Backend Streaming**:
+   - FastAPI endpoint uses `StreamingResponse`
+   - Ollama integration supports streaming generation
+   - Responses are chunked and sent in real-time
+
+2. **Frontend Streaming**:
+   - Streamlit interface updates in real-time
+   - Progressive display of responses
+   - Context display after response completion
 
 ## Graph Schema
 
@@ -123,10 +139,25 @@ The application consists of three main services:
    - Verify sufficient disk space
    - Check application logs for specific errors
 
+4. **Streaming Issues**
+   - Check browser console for SSE connection errors
+   - Verify network connectivity
+   - Ensure no proxy or firewall is blocking SSE connections
+
 ## Development
 
 The project structure is organized as follows:
 - `app/api/`: FastAPI backend implementation
 - `app/core/`: Core functionality (database, LLM, config)
 - `app/frontend/`: Streamlit frontend application
-- `app/models/`: Data models and schemas 
+- `app/models/`: Data models and schemas
+
+## Dependencies
+
+Key dependencies include:
+- FastAPI for the backend API
+- Streamlit for the frontend interface
+- Neo4j for graph database
+- Ollama for LLM and embeddings
+- aiohttp for async HTTP requests
+- sseclient-py for Server-Sent Events 

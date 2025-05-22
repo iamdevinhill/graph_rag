@@ -1,8 +1,11 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional
 import uuid
 import logging
+import json
+import asyncio
 
 from app.core.database import db
 from app.core.llm import ollama_service
@@ -79,14 +82,18 @@ async def query_documents(query: Query):
         context = "\n".join([chunk["content"] for chunk in similar_chunks])
         logger.info("Combined context from chunks")
         
-        # Generate response using the context
-        response = ollama_service.generate_response(query.text, context)
-        logger.info("Generated response")
+        async def generate_stream():
+            # Stream the response using Ollama's streaming capability
+            async for chunk in ollama_service.generate_streaming_response(query.text, context):
+                yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+            
+            # Send the context at the end
+            yield f"data: {json.dumps({'context': context})}\n\n"
         
-        return {
-            "response": response,
-            "context": context
-        }
+        return StreamingResponse(
+            generate_stream(),
+            media_type="text/event-stream"
+        )
     except Exception as e:
         logger.error(f"Error processing query: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
