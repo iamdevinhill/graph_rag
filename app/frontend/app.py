@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 API_URL = os.getenv("API_URL", "http://api:8000")
 
 st.set_page_config(
-    page_title="Document Chat System",
+    page_title="Graph RAG Chat",
     page_icon="💬",
     layout="wide"
 )

@@ -5,11 +5,40 @@ This application implements a Retrieval Augmented Generation (RAG) system using 
 ## Prerequisites
 
 - Docker and Docker Compose
+- NVIDIA GPU with CUDA support (optional, but recommended for better performance)
+- NVIDIA Container Toolkit (if using GPU)
 - Or alternatively:
   - Python 3.8+
   - Neo4j Database (version 5.x)
   - Ollama (for LLM and embeddings)
   - Minimum 4GB RAM recommended for running all services
+  - NVIDIA GPU with CUDA support (optional)
+
+## GPU Support
+
+The application supports GPU acceleration for both the API service and Ollama:
+
+1. **Requirements**:
+   - NVIDIA GPU with CUDA support
+   - NVIDIA drivers installed on the host system
+   - NVIDIA Container Toolkit installed
+
+2. **Installation**:
+   ```bash
+   # Install NVIDIA Container Toolkit
+   distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+   curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+   curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+   sudo apt-get update
+   sudo apt-get install -y nvidia-docker2
+   sudo systemctl restart docker
+   ```
+
+3. **Verification**:
+   ```bash
+   # Test NVIDIA Docker
+   docker run --rm --gpus all nvidia/cuda:12.1.0-base-ubuntu22.04 nvidia-smi
+   ```
 
 ## Setup with Docker
 
