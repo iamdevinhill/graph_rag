@@ -24,7 +24,7 @@ st.set_page_config(
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-st.title("Document Chat System")
+st.title("RAG Chat System")
 st.markdown("""
 This application allows you to:
 1. Upload PDF or text documents
