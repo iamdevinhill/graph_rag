@@ -9,4 +9,6 @@ pandas==2.2.0
 python-multipart==0.0.9
 pydantic-settings==2.2.1
 pydantic==2.6.1
-PyPDF2==3.0.1 
+PyPDF2==3.0.1
+aiohttp==3.9.3
+sseclient-py==1.7.2 

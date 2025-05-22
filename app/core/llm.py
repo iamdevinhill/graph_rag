@@ -1,5 +1,7 @@
 import requests
-from typing import List, Dict, Any
+import json
+import aiohttp
+from typing import List, Dict, Any, AsyncGenerator
 from .config import get_settings
 
 settings = get_settings()
@@ -34,6 +36,28 @@ class OllamaService:
         )
         response.raise_for_status()
         return response.json()["response"]
+
+    async def generate_streaming_response(self, prompt: str, context: str = "") -> AsyncGenerator[str, None]:
+        full_prompt = f"Context: {context}\n\nQuestion: {prompt}\n\nAnswer:" if context else prompt
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{self.base_url}/api/generate",
+                json={
+                    "model": self.llm_model,
+                    "prompt": full_prompt,
+                    "stream": True
+                }
+            ) as response:
+                response.raise_for_status()
+                async for line in response.content:
+                    if line:
+                        try:
+                            data = json.loads(line)
+                            if "response" in data:
+                                yield data["response"]
+                        except json.JSONDecodeError:
+                            continue
 
     def chunk_text(self, text: str, chunk_size: int = 1000) -> List[str]:
         words = text.split()

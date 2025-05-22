@@ -6,6 +6,7 @@ import PyPDF2
 import io
 import logging
 import datetime
+import sseclient
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -24,7 +25,7 @@ st.set_page_config(
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-st.title("RAG Chat System")
+st.title("Graph RAG Chat")
 st.markdown("""
 This application allows you to:
 1. Upload PDF or text documents
@@ -141,28 +142,44 @@ if prompt := st.chat_input("Ask a question about your documents"):
     # Get AI response
     try:
         logger.info(f"Sending query to API: {prompt}")
-        with st.spinner("Getting answer..."):
-            response = requests.post(
-                f"{API_URL}/query",
-                json={"text": prompt}
-            )
-            response.raise_for_status()
-            result = response.json()
-            logger.info("Received response from API")
-            
-            # Add assistant response to chat history
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": result["response"],
-                "context": result.get("context", "No relevant context found.")
-            })
-            
-            # Display assistant response
-            with st.chat_message("assistant"):
-                st.write(result["response"])
-                if result.get("context"):
-                    with st.expander("View Context"):
-                        st.write(result["context"])
+        
+        # Create a placeholder for the streaming response
+        response_placeholder = st.empty()
+        context_placeholder = st.empty()
+        
+        # Initialize response text
+        full_response = ""
+        
+        # Make streaming request
+        response = requests.post(
+            f"{API_URL}/query",
+            json={"text": prompt},
+            stream=True
+        )
+        response.raise_for_status()
+        
+        # Process the streaming response
+        client = sseclient.SSEClient(response)
+        for event in client.events():
+            try:
+                data = json.loads(event.data)
+                if "chunk" in data:
+                    full_response += data["chunk"]
+                    response_placeholder.write(full_response)
+                elif "context" in data:
+                    context = data["context"]
+                    with context_placeholder.expander("View Context"):
+                        st.write(context)
+            except json.JSONDecodeError:
+                continue
+        
+        # Add assistant response to chat history
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": full_response,
+            "context": context if 'context' in locals() else "No relevant context found."
+        })
+        
     except requests.exceptions.ConnectionError as e:
         logger.error(f"Connection error while querying: {str(e)}")
         st.error("Failed to connect to the API. Please try again.")
