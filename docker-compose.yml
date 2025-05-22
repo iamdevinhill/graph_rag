@@ -12,6 +12,7 @@ services:
       - NEO4J_USER=neo4j
       - NEO4J_PASSWORD=password
       - OLLAMA_BASE_URL=http://ollama:11434
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-}  # Empty string means use CPU
     deploy:
       resources:
         reservations:
@@ -69,6 +70,8 @@ services:
     volumes:
       - ollama_data:/root/.ollama
       - ./start-ollama.sh:/start-ollama.sh
+    environment:
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-}  # Empty string means use CPU
     deploy:
       resources:
         reservations:

@@ -40,11 +40,31 @@ The application supports GPU acceleration for both the API service and Ollama:
    docker run --rm --gpus all nvidia/cuda:12.1.0-base-ubuntu22.04 nvidia-smi
    ```
 
+4. **CPU Fallback**:
+   The application will automatically fall back to CPU if no GPU is available. To explicitly force CPU mode:
+   ```bash
+   # Run with CPU only
+   CUDA_VISIBLE_DEVICES="" docker-compose up
+   ```
+
+   To check which mode is being used:
+   ```bash
+   # Check GPU usage for Ollama
+   docker exec -it basic_graph-ollama-1 nvidia-smi
+   
+   # If no GPU is available or CPU mode is forced, you'll see an error message
+   # indicating that no GPU is being used
+   ```
+
 ## Setup with Docker
 
 1. Build and start the containers:
 ```bash
+# With GPU (if available)
 docker-compose up --build
+
+# Or force CPU mode
+CUDA_VISIBLE_DEVICES="" docker-compose up --build
 ```
 
 2. Pull the required Ollama models (in a new terminal):
