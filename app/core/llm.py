@@ -17,7 +17,11 @@ class OllamaService:
             f"{self.base_url}/api/embeddings",
             json={
                 "model": self.embedding_model,
-                "prompt": text
+                "prompt": text,
+                "options": {
+                    "num_gpu": 1,
+                    "num_thread": 4
+                }
             }
         )
         response.raise_for_status()
@@ -31,7 +35,13 @@ class OllamaService:
             json={
                 "model": self.llm_model,
                 "prompt": full_prompt,
-                "stream": False
+                "stream": False,
+                "options": {
+                    "num_gpu": 1,
+                    "num_thread": 4,
+                    "num_ctx": 4096,
+                    "num_batch": 512
+                }
             }
         )
         response.raise_for_status()
@@ -46,7 +56,13 @@ class OllamaService:
                 json={
                     "model": self.llm_model,
                     "prompt": full_prompt,
-                    "stream": True
+                    "stream": True,
+                    "options": {
+                        "num_gpu": 1,
+                        "num_thread": 4,
+                        "num_ctx": 4096,
+                        "num_batch": 512
+                    }
                 }
             ) as response:
                 response.raise_for_status()

@@ -10,6 +10,7 @@ import asyncio
 from app.core.database import db
 from app.core.llm import ollama_service
 from app.core.init_db import initialize_database
+from app.utils.gpu_utils import initialize_gpu, get_gpu_info
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -109,9 +110,21 @@ async def health_check():
         logger.error(f"Health check failed: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/gpu-info")
+async def gpu_info():
+    """Get information about GPU availability and status."""
+    try:
+        return get_gpu_info()
+    except Exception as e:
+        logger.error(f"Error getting GPU info: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.on_event("startup")
 async def startup_event():
     logger.info("Starting up API service")
+    # Initialize GPU settings
+    initialize_gpu()
+    logger.info("GPU settings initialized")
     db.create_constraints()
     initialize_database()
     logger.info("API service startup complete") 
