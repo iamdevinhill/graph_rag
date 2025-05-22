@@ -34,7 +34,7 @@ pull_model() {
 }
 
 # Pull required models
-pull_model "llama2" || exit 1
+pull_model "llama3.2" || exit 1
 pull_model "nomic-embed-text" || exit 1
 
 echo "All models pulled successfully!"

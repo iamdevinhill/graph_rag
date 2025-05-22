@@ -69,7 +69,7 @@ CUDA_VISIBLE_DEVICES="" docker-compose up --build
 
 2. Pull the required Ollama models (in a new terminal):
 ```bash
-docker exec -it basic_graph-ollama-1 ollama pull llama2
+docker exec -it basic_graph-ollama-1 ollama pull llama3.2
 docker exec -it basic_graph-ollama-1 ollama pull nomic-embed-text
 ```
 
@@ -97,7 +97,7 @@ OLLAMA_BASE_URL=http://localhost:11434
 
 4. Start Ollama with required models:
 ```bash
-ollama pull llama2
+ollama pull llama3.2
 ollama pull nomic-embed-text
 ```
 
