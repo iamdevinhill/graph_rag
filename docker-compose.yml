@@ -27,7 +27,7 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
     ports:
-      - "8501:8501"
+      - "80:80"
     environment:
       - API_URL=http://api:8000
     depends_on:

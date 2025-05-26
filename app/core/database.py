@@ -3,25 +3,38 @@ from .config import get_settings
 import time
 import logging
 import json
+from neo4j import Driver
+from typing import Optional
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
 
 class Neo4jConnection:
+    _instance: Optional['Neo4jConnection'] = None
+    _driver: Optional[Driver] = None
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(Neo4jConnection, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self):
-        self.driver = None
-        self.connect_with_retry()
+        if self._driver is None:
+            self.connect_with_retry()
 
     def connect_with_retry(self, max_retries=5, retry_delay=5):
         for attempt in range(max_retries):
             try:
                 logger.info(f"Attempting to connect to Neo4j at {settings.NEO4J_URI}")
-                self.driver = GraphDatabase.driver(
+                self._driver = GraphDatabase.driver(
                     settings.NEO4J_URI,
-                    auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD)
+                    auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD),
+                    max_connection_lifetime=3600,  # 1 hour
+                    max_connection_pool_size=50,
+                    connection_acquisition_timeout=60
                 )
                 # Test the connection
-                with self.driver.session() as session:
+                with self._driver.session() as session:
                     session.run("RETURN 1")
                 logger.info("Successfully connected to Neo4j")
                 return
@@ -34,14 +47,16 @@ class Neo4jConnection:
                     raise
 
     def close(self):
-        if self.driver:
-            self.driver.close()
+        if self._driver:
+            self._driver.close()
+            self._driver = None
+            Neo4jConnection._instance = None
 
     def get_session(self):
         try:
-            if not self.driver:
+            if not self._driver:
                 self.connect_with_retry()
-            return self.driver.session()
+            return self._driver.session()
         except Exception as e:
             logger.error(f"Error getting Neo4j session: {str(e)}")
             raise

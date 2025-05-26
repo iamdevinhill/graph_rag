@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph RAG Chat</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1><i class="fas fa-brain"></i> Graph RAG Chat</h1>
+            <p>Upload documents, chat with AI, and visualize the knowledge graph</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="main-content">
+            <div class="chat-section">
+                <div class="chat-header">
+                    <h2><i class="fas fa-comments"></i> Chat</h2>
+                </div>
+                <div class="chat-messages" id="chatMessages"></div>
+                <div class="input-section">
+                    <input type="text" class="message-input" id="messageInput" placeholder="Ask a question about your documents...">
+                    <button class="btn" id="sendButton">
+                        <i class="fas fa-paper-plane"></i>
+                        Send
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="upload-section">
+                <h2><i class="fas fa-file-upload"></i> Document Upload</h2>
+                <div class="file-upload" id="dropZone">
+                    <input type="file" id="fileInput" accept=".pdf,.txt" style="display: none;">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Drag and drop a file here or click to select</p>
+                    <p class="file-info" id="fileInfo"></p>
+                </div>
+                <button class="btn" id="uploadButton" style="display: none;">
+                    <i class="fas fa-upload"></i>
+                    Upload Document
+                </button>
+            </div>
+
+            <div class="graph-section">
+                <div class="graph-header">
+                    <h2><i class="fas fa-project-diagram"></i> Document Graph</h2>
+                    <button class="btn" id="refreshGraph">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh
+                    </button>
+                </div>
+                <div class="graph-container" id="graphVisualization"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add status message container -->
+    <div id="statusContainer" class="status-container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html> 
