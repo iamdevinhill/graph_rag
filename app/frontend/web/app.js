@@ -616,7 +616,12 @@ function renderGraph(graphData) {
         },
         manipulation: {
             enabled: false
-        }
+        },
+        width: '100%',
+        height: '100%',
+        autoResize: false,
+        maxHeight: 600,
+        minHeight: 400
     };
     
     if (network) {
@@ -624,7 +629,13 @@ function renderGraph(graphData) {
     }
     
     network = new vis.Network(container, data, options);
-    
+
+    // Force a resize after initialization and prevent further resizing
+    setTimeout(() => {
+        network.redraw();
+        network.setSize('100%', '600px');
+    }, 100);
+
     // Add click event for node details
     network.on('click', function(params) {
         if (params.nodes.length > 0) {

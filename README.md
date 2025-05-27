@@ -9,7 +9,7 @@ This application implements a Retrieval Augmented Generation (RAG) system using 
 - NVIDIA Container Toolkit (if using GPU)
 - Or alternatively:
   - Python 3.8+
-  - Neo4j Database (version 5.x)
+  - Neo4j Database (version 5.17.0)
   - Ollama (for LLM and embeddings)
   - Minimum 4GB RAM recommended for running all services
   - NVIDIA GPU with CUDA support (optional)
@@ -40,7 +40,13 @@ The application supports GPU acceleration for both the API service and Ollama:
    docker run --rm --gpus all nvidia/cuda:12.1.0-base-ubuntu22.04 nvidia-smi
    ```
 
-4. **CPU Fallback**:
+4. **GPU Configuration**:
+   The application is configured to use GPU with the following settings:
+   - CUDA_VISIBLE_DEVICES=0
+   - OLLAMA_NUM_GPU_LAYERS=100
+   - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+
+5. **CPU Fallback**:
    The application will automatically fall back to CPU if no GPU is available. To explicitly force CPU mode:
    ```bash
    # Run with CPU only
@@ -74,8 +80,8 @@ docker exec -it basic_graph-ollama-1 ollama pull nomic-embed-text
 ```
 
 3. Access the application:
-   - Streamlit frontend: http://localhost:8501
-   - FastAPI backend: http://localhost:8000
+   - Web Interface: http://localhost
+   - FastAPI backend: http://localhost:8001
    - Neo4j Browser: http://localhost:7474
 
 ## Manual Setup (without Docker)
@@ -103,7 +109,7 @@ ollama pull nomic-embed-text
 
 5. Start the FastAPI backend:
 ```bash
-uvicorn app.api.main:app --reload
+uvicorn app.api.main:app --reload --port 8001
 ```
 
 6. Start the Streamlit frontend:
@@ -156,20 +162,29 @@ The application uses Neo4j to store:
 
 ## Docker Services
 
-The application consists of three main services:
+The application consists of four main services:
 
-1. **App Service**
-   - FastAPI backend (port 8000)
-   - Streamlit frontend (port 8501)
+1. **API Service**
+   - FastAPI backend (port 8001)
+   - GPU-accelerated processing
+   - Health checks and monitoring
 
-2. **Neo4j Database**
+2. **Frontend Service**
+   - Nginx-based web interface (port 80)
+   - Reverse proxy to API service
+   - Static file serving
+
+3. **Neo4j Database**
    - HTTP interface (port 7474)
    - Bolt protocol (port 7687)
    - Persistent data storage
+   - Memory configuration optimized for 4GB RAM
 
-3. **Ollama Service**
+4. **Ollama Service**
    - LLM and embedding service (port 11434)
+   - GPU-accelerated inference
    - Persistent model storage
+   - Automatic model loading
 
 ## Troubleshooting
 
@@ -177,21 +192,25 @@ The application consists of three main services:
    - Verify Neo4j is running and accessible
    - Check credentials in .env file
    - Ensure ports 7474 and 7687 are available
+   - Check Neo4j logs: `docker logs basic_graph-neo4j-1`
 
 2. **Ollama Model Issues**
    - Verify models are downloaded using `ollama list`
-   - Check Ollama service logs for errors
+   - Check Ollama service logs: `docker logs basic_graph-ollama-1`
    - Ensure port 11434 is accessible
+   - Verify GPU availability: `nvidia-smi`
 
 3. **Document Processing Issues**
    - Check PDF file format and size
    - Verify sufficient disk space
-   - Check application logs for specific errors
+   - Check application logs: `docker logs basic_graph-api-1`
+   - Monitor GPU memory usage
 
 4. **Streaming Issues**
    - Check browser console for SSE connection errors
    - Verify network connectivity
    - Ensure no proxy or firewall is blocking SSE connections
+   - Check API logs for streaming errors
 
 ## Development
 
@@ -200,13 +219,15 @@ The project structure is organized as follows:
 - `app/core/`: Core functionality (database, LLM, config)
 - `app/frontend/`: Streamlit frontend application
 - `app/models/`: Data models and schemas
+- `app/utils/`: Utility functions and helpers
 
 ## Dependencies
 
 Key dependencies include:
-- FastAPI for the backend API
-- Streamlit for the frontend interface
-- Neo4j for graph database
+- FastAPI 0.109.2 for the backend API
+- Streamlit 1.31.1 for the frontend interface
+- Neo4j 5.17.0 for graph database
 - Ollama for LLM and embeddings
-- aiohttp for async HTTP requests
-- sseclient-py for Server-Sent Events 
+- PyTorch 2.2.0 with CUDA 12.1 support
+- aiohttp 3.9.3 for async HTTP requests
+- sseclient-py 1.7.2 for Server-Sent Events 
