@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Graph RAG Chat</title>
-    <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" rel="stylesheet" type="text/css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
     <header>
@@ -23,10 +23,16 @@
                 <div class="chat-header">
                     <h2><i class="fas fa-comments"></i> Chat</h2>
                 </div>
-                <div class="chat-messages" id="chatMessages"></div>
+                <div class="chat-messages" id="chatMessages" role="log" aria-live="polite"></div>
                 <div class="input-section">
-                    <input type="text" class="message-input" id="messageInput" placeholder="Ask a question about your documents...">
-                    <button class="btn" id="sendButton">
+                    <input 
+                        type="text" 
+                        class="message-input" 
+                        id="messageInput" 
+                        placeholder="Ask a question about your documents..."
+                        aria-label="Message input"
+                    >
+                    <button class="btn" id="sendButton" aria-label="Send message">
                         <i class="fas fa-paper-plane"></i>
                         Send
                     </button>
@@ -37,35 +43,93 @@
         <div class="sidebar">
             <div class="upload-section">
                 <h2><i class="fas fa-file-upload"></i> Document Upload</h2>
-                <div class="file-upload" id="dropZone">
-                    <input type="file" id="fileInput" accept=".pdf,.txt" style="display: none;">
+                <input type="file" id="fileInput" accept=".pdf,.txt" style="display: none;" aria-label="File input">
+                <div class="file-upload" id="dropZone" role="button" tabindex="0" aria-label="Upload area">
                     <i class="fas fa-cloud-upload-alt"></i>
                     <p>Drag and drop a file here or click to select</p>
+                    <p>Supported formats: PDF, TXT</p>
                     <p class="file-info" id="fileInfo"></p>
                 </div>
-                <button class="btn" id="uploadButton" style="display: none;">
-                    <i class="fas fa-upload"></i>
-                    Upload Document
-                </button>
+                <div class="upload-buttons">
+                    <button class="btn" id="uploadButton" aria-label="Upload document">
+                        <i class="fas fa-upload"></i>
+                        Upload Document
+                    </button>
+                    <button class="btn btn-secondary" id="selectFileButton" aria-label="Select file">
+                        <i class="fas fa-folder-open"></i>
+                        Select File
+                    </button>
+                </div>
             </div>
 
             <div class="graph-section">
                 <div class="graph-header">
-                    <h2><i class="fas fa-project-diagram"></i> Document Graph</h2>
-                    <button class="btn" id="refreshGraph">
-                        <i class="fas fa-sync-alt"></i>
-                        Refresh
-                    </button>
+                    <h2><i class="fas fa-project-diagram"></i> Knowledge Graph</h2>
+                    <div class="graph-controls">
+                        <button id="refreshGraph" class="btn btn-icon" title="Refresh Graph">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button id="zoomIn" class="btn btn-icon" title="Zoom In">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                        <button id="zoomOut" class="btn btn-icon" title="Zoom Out">
+                            <i class="fas fa-search-minus"></i>
+                        </button>
+                        <button id="resetView" class="btn btn-icon" title="Reset View">
+                            <i class="fas fa-compress-arrows-alt"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="graph-container" id="graphVisualization"></div>
+                <div class="graph-container" id="graphVisualization" role="img" aria-label="Knowledge graph visualization">
+                    <div class="graph-loading">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Loading graph...</span>
+                    </div>
+                </div>
+                <div class="graph-legend">
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: #3B82F6;"></span>
+                        <span class="legend-label">Document</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: #10B981;"></span>
+                        <span class="legend-label">Chunk</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: #F59E0B;"></span>
+                        <span class="legend-label">Entity</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: #8B5CF6;"></span>
+                        <span class="legend-label">Concept</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: #EC4899;"></span>
+                        <span class="legend-label">Person</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: #6366F1;"></span>
+                        <span class="legend-label">Organization</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: #14B8A6;"></span>
+                        <span class="legend-label">Location</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: #F97316;"></span>
+                        <span class="legend-label">Event</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Add status message container -->
-    <div id="statusContainer" class="status-container"></div>
+    <!-- Status message container -->
+    <div id="statusContainer" class="status-container" aria-live="polite"></div>
+
+    <div id="nodeDetails"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
     <script src="app.js"></script>
 </body>
-</html> 
+</html>

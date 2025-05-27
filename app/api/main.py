@@ -233,66 +233,84 @@ async def gpu_info():
 async def get_graph_data():
     try:
         with db.get_session() as session:
-            # Query to get all documents and their chunks
+            # Query to get all nodes and their properties, and all relationships
             query = """
-            MATCH (d:Document)-[r:CONTAINS]->(c:Chunk)
-            RETURN d, c, r
+            MATCH (n)
+            OPTIONAL MATCH (n)-[r]->(m)
+            WITH n, r, m,
+                 [label in labels(n) | label] as nodeLabels,
+                 [prop in keys(n) | {key: prop, value: n[prop]}] as nodeProps,
+                 CASE WHEN r IS NOT NULL THEN [prop in keys(r) | {key: prop, value: r[prop]}] ELSE [] END as relProps
+            RETURN n, r, m, nodeLabels, nodeProps, relProps
+            ORDER BY n.id
             """
             result = session.run(query)
             
             # Process the results
             nodes = []
             relationships = []
-            node_ids = set()
+            node_ids = set()  # Keep track of processed nodes to avoid duplicates
             
             for record in result:
-                # Process document node
-                doc = record["d"]
-                if doc.id not in node_ids:
-                    metadata = doc.get("metadata")
-                    if isinstance(metadata, str):
-                        try:
-                            metadata = json.loads(metadata)
-                        except json.JSONDecodeError:
-                            metadata = {}
+                try:
+                    # Process source node
+                    source_node = record['n']
+                    if source_node.id not in node_ids:
+                        node_ids.add(source_node.id)
+                        node_label = source_node.get('name') or source_node.get('title') or source_node.get('label') or 'Unnamed'
+                        node_type = record['nodeLabels'][0] if record['nodeLabels'] else 'Unknown'
+                        nodes.append({
+                            'id': str(source_node.id),
+                            'label': str(node_label),
+                            'type': node_type,
+                            'properties': {str(prop['key']): prop['value'] for prop in record['nodeProps'] if prop['value'] is not None}
+                        })
                     
-                    nodes.append({
-                        "id": doc.id,
-                        "label": metadata.get("filename", "Document") if metadata else "Document",
-                        "type": "Document",
-                        "properties": {
-                            "description": doc.get("content", "")[:100] + "..."
-                        }
-                    })
-                    node_ids.add(doc.id)
-                
-                # Process chunk node
-                chunk = record["c"]
-                if chunk.id not in node_ids:
-                    nodes.append({
-                        "id": chunk.id,
-                        "label": "Chunk",
-                        "type": "Chunk",
-                        "properties": {
-                            "description": chunk.get("content", "")[:100] + "..."
-                        }
-                    })
-                    node_ids.add(chunk.id)
-                
-                # Process relationship
-                relationships.append({
-                    "startNode": doc.id,
-                    "endNode": chunk.id,
-                    "type": "CONTAINS"
-                })
+                    # Process target node and relationship if they exist
+                    if record['m'] is not None:
+                        target_node = record['m']
+                        if target_node.id not in node_ids:
+                            node_ids.add(target_node.id)
+                            node_label = target_node.get('name') or target_node.get('title') or target_node.get('label') or 'Unnamed'
+                            node_type = record['nodeLabels'][0] if record['nodeLabels'] else 'Unknown'
+                            nodes.append({
+                                'id': str(target_node.id),
+                                'label': str(node_label),
+                                'type': node_type,
+                                'properties': {str(prop['key']): prop['value'] for prop in record['nodeProps'] if prop['value'] is not None}
+                            })
+                        
+                        # Add relationship
+                        if record['r'] is not None:
+                            rel_type = type(record['r']).__name__
+                            relationships.append({
+                                'startNode': str(source_node.id),
+                                'endNode': str(target_node.id),
+                                'type': rel_type,
+                                'properties': {str(prop['key']): prop['value'] for prop in record['relProps'] if prop['value'] is not None}
+                            })
+                except Exception as e:
+                    logger.warning(f"Error processing record: {str(e)}")
+                    continue
             
+            if not nodes:
+                logger.warning("No nodes found in the graph")
+                return {
+                    'nodes': [],
+                    'relationships': []
+                }
+            
+            logger.info(f"Retrieved {len(nodes)} nodes and {len(relationships)} relationships")
             return {
-                "nodes": nodes,
-                "relationships": relationships
+                'nodes': nodes,
+                'relationships': relationships
             }
     except Exception as e:
-        logger.error(f"Error fetching graph data: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error fetching graph data: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch graph data: {str(e)}"
+        )
 
 @app.get("/")
 async def root():

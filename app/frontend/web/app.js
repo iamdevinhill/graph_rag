@@ -9,12 +9,20 @@ const fileInput = document.getElementById('fileInput');
 const dropZone = document.getElementById('dropZone');
 const fileInfo = document.getElementById('fileInfo');
 const uploadButton = document.getElementById('uploadButton');
+const selectFileButton = document.getElementById('selectFileButton');
 const refreshGraphButton = document.getElementById('refreshGraph');
 const graphVisualization = document.getElementById('graphVisualization');
+const nodeDetails = document.getElementById('nodeDetails');
+
+// Graph Controls
+const zoomInButton = document.getElementById('zoomIn');
+const zoomOutButton = document.getElementById('zoomOut');
+const resetViewButton = document.getElementById('resetView');
 
 // Initialize graph visualization
 let network = null;
 let isProcessing = false;
+let selectedFile = null;
 
 // Status message types
 const STATUS_TYPES = {
@@ -30,58 +38,107 @@ let statusQueue = [];
 let isProcessingStatus = false;
 
 // Event Listeners
-sendButton.addEventListener('click', sendMessage);
-messageInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-    }
-});
-
-dropZone.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    fileInput.click();
-});
-
-dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropZone.classList.add('dragover');
-});
-
-dropZone.addEventListener('dragleave', () => {
-    dropZone.classList.remove('dragover');
-});
-
-dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('dragover');
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-        handleFileSelect(files[0]);
-    }
-});
-
-fileInput.addEventListener('change', (e) => {
-    if (e.target.files.length > 0) {
-        handleFileSelect(e.target.files[0]);
-    }
-});
-
-uploadButton.addEventListener('click', (e) => {
-    e.preventDefault();
-    uploadDocument();
-});
-
-refreshGraphButton.addEventListener('click', () => {
-    refreshGraphButton.classList.add('rotating');
-    updateGraphVisualization().finally(() => {
-        refreshGraphButton.classList.remove('rotating');
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize event listeners
+    sendButton.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
     });
+
+    // Enhanced dropzone event listeners
+    dropZone.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        fileInput.click();
+    });
+
+    dropZone.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            fileInput.click();
+        }
+    });
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+        if (!dropZone.contains(e.relatedTarget)) {
+            dropZone.classList.remove('dragover');
+        }
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFileSelect(files[0]);
+        }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleFileSelect(e.target.files[0]);
+        }
+    });
+
+    uploadButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        uploadDocument();
+    });
+
+    selectFileButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        fileInput.click();
+    });
+
+    refreshGraphButton.addEventListener('click', () => {
+        refreshGraphButton.classList.add('rotating');
+        updateGraphVisualization().finally(() => {
+            refreshGraphButton.classList.remove('rotating');
+        });
+    });
+
+    // Initialize upload button state
+    updateUploadButtonState();
+
+    // Initialize graph visualization
+    updateGraphVisualization();
 });
 
-// Initialize graph visualization
-updateGraphVisualization();
+zoomInButton.addEventListener('click', () => {
+    if (network) {
+        const scale = network.getScale();
+        network.moveTo({
+            scale: scale * 1.2,
+            animation: true
+        });
+    }
+});
+
+zoomOutButton.addEventListener('click', () => {
+    if (network) {
+        const scale = network.getScale();
+        network.moveTo({
+            scale: scale * 0.8,
+            animation: true
+        });
+    }
+});
+
+resetViewButton.addEventListener('click', () => {
+    if (network) {
+        network.fit({
+            animation: true
+        });
+    }
+});
 
 // Functions
 function handleFileSelect(file) {
@@ -96,6 +153,7 @@ function handleFileSelect(file) {
         uploadButton.disabled = false;
         uploadButton.innerHTML = '<i class="fas fa-upload"></i> Upload Document';
         dropZone.classList.add('file-selected');
+        selectedFile = file;
     } else {
         showStatus('Please select a PDF or text file.', STATUS_TYPES.ERROR);
         fileInfo.textContent = '';
@@ -177,8 +235,7 @@ function processStatusQueue() {
 }
 
 async function uploadDocument() {
-    const file = fileInput.files[0];
-    if (!file) {
+    if (!selectedFile) {
         showStatus('Please select a file first.', STATUS_TYPES.ERROR);
         return;
     }
@@ -189,7 +246,7 @@ async function uploadDocument() {
 
     try {
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', selectedFile);
 
         // Upload phase
         showStatus('Uploading document...', STATUS_TYPES.PROGRESS);
@@ -220,7 +277,7 @@ async function uploadDocument() {
         dropZone.classList.remove('file-selected');
         
         // Add a system message to the chat
-        addMessageToChat('system', `Document "${file.name}" has been uploaded and processed. You can now ask questions about it.`);
+        addMessageToChat('system', `Document "${selectedFile.name}" has been uploaded and processed. You can now ask questions about it.`);
     } catch (error) {
         let errorMessage = 'Error uploading document';
         if (error.message.includes('No text content could be extracted')) {
@@ -287,15 +344,34 @@ async function sendMessage() {
                             updateAssistantMessage(assistantMessage);
                         } else if (data.context) {
                             context = data.context;
-                            // Add context to the existing message
+                            // Add context to the existing message using the collapsible structure
                             const lastMessage = chatMessages.lastElementChild;
                             if (lastMessage && lastMessage.classList.contains('assistant')) {
                                 const contextDiv = document.createElement('div');
                                 contextDiv.className = 'message-context';
-                                contextDiv.innerHTML = `
-                                    <i class="fas fa-info-circle"></i>
-                                    <span>Context: ${context}</span>
+                                
+                                const contextHeader = document.createElement('div');
+                                contextHeader.className = 'message-context-header collapsed';
+                                contextHeader.innerHTML = `
+                                    <i class="fas fa-chevron-down"></i>
+                                    <span>Context</span>
                                 `;
+                                
+                                const contextContent = document.createElement('div');
+                                contextContent.className = 'message-context-content';
+                                contextContent.textContent = context;
+                                
+                                contextDiv.appendChild(contextHeader);
+                                contextDiv.appendChild(contextContent);
+                                
+                                // Add click handler for toggling
+                                contextHeader.addEventListener('click', (e) => {
+                                    e.stopPropagation();
+                                    const isCollapsed = contextHeader.classList.contains('collapsed');
+                                    contextHeader.classList.toggle('collapsed');
+                                    contextContent.classList.toggle('expanded');
+                                });
+                                
                                 lastMessage.appendChild(contextDiv);
                             }
                         }
@@ -331,10 +407,29 @@ function addMessageToChat(role, content, context = null) {
     if (context) {
         const contextDiv = document.createElement('div');
         contextDiv.className = 'message-context';
-        contextDiv.innerHTML = `
-            <i class="fas fa-info-circle"></i>
-            <span>Context: ${context}</span>
+        
+        const contextHeader = document.createElement('div');
+        contextHeader.className = 'message-context-header collapsed';
+        contextHeader.innerHTML = `
+            <i class="fas fa-chevron-down"></i>
+            <span>Context</span>
         `;
+        
+        const contextContent = document.createElement('div');
+        contextContent.className = 'message-context-content';
+        contextContent.textContent = context;
+        
+        contextDiv.appendChild(contextHeader);
+        contextDiv.appendChild(contextContent);
+        
+        // Add click handler for toggling
+        contextHeader.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isCollapsed = contextHeader.classList.contains('collapsed');
+            contextHeader.classList.toggle('collapsed');
+            contextContent.classList.toggle('expanded');
+        });
+        
         messageDiv.appendChild(contextDiv);
     }
 
@@ -354,14 +449,31 @@ function updateAssistantMessage(content) {
 
 async function updateGraphVisualization() {
     try {
+        // Show loading state
+        const loadingElement = document.querySelector('.graph-loading');
+        if (loadingElement) {
+            loadingElement.style.display = 'flex';
+        }
+
         const response = await fetch(`${API_URL}/graph`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
+        
+        // Hide loading state
+        if (loadingElement) {
+            loadingElement.style.display = 'none';
+        }
+
         renderGraph(data);
     } catch (error) {
         showStatus(`Error fetching graph data: ${error.message}`, STATUS_TYPES.ERROR);
+        // Hide loading state on error
+        const loadingElement = document.querySelector('.graph-loading');
+        if (loadingElement) {
+            loadingElement.style.display = 'none';
+        }
     }
 }
 
@@ -369,23 +481,33 @@ function renderGraph(graphData) {
     // Create nodes and edges for vis.js
     const nodes = new vis.DataSet(graphData.nodes.map(node => ({
         id: node.id,
-        label: node.label,
-        title: node.properties?.description || '',
-        color: node.type === 'Document' ? '#3B82F6' : '#10B981',
+        label: node.label || node.name || node.title || 'Unnamed',
+        title: createNodeTooltip(node),
+        group: node.type || 'default',
+        color: getNodeColor(node.type),
         font: {
             color: '#FFFFFF',
             size: 14,
-            face: 'Inter'
+            face: 'Inter',
+            strokeWidth: 2,
+            strokeColor: '#1E293B'
         },
-        shape: node.type === 'Document' ? 'dot' : 'circle',
-        size: node.type === 'Document' ? 20 : 16
+        shape: getNodeShape(node.type),
+        size: getNodeSize(node.type),
+        borderWidth: 2,
+        borderWidthSelected: 3,
+        shadow: true,
+        properties: node.properties || {}
     })));
     
     const edges = new vis.DataSet(graphData.relationships.map(rel => ({
         from: rel.startNode,
         to: rel.endNode,
         label: rel.type,
-        arrows: 'to',
+        title: createRelationshipTooltip(rel),
+        arrows: {
+            to: { enabled: true, scaleFactor: 1, type: 'arrow' }
+        },
         color: {
             color: '#60A5FA',
             highlight: '#93C5FD',
@@ -395,12 +517,18 @@ function renderGraph(graphData) {
             color: '#CBD5E1',
             size: 12,
             face: 'Inter',
-            align: 'middle'
+            align: 'middle',
+            strokeWidth: 2,
+            strokeColor: '#1E293B'
         },
         smooth: {
             type: 'curvedCW',
             roundness: 0.2
-        }
+        },
+        width: 2,
+        widthSelected: 3,
+        shadow: true,
+        properties: rel.properties || {}
     })));
     
     // Create network
@@ -417,22 +545,77 @@ function renderGraph(graphData) {
             widthSelected: 3,
             shadow: true
         },
-        physics: {
-            stabilization: {
-                iterations: 100,
-                updateInterval: 50
+        groups: {
+            Document: {
+                color: { background: '#3B82F6', border: '#2563EB' },
+                shape: 'dot',
+                size: 20
             },
-            barnesHut: {
-                gravitationalConstant: -80000,
-                springConstant: 0.001,
-                springLength: 200
+            Chunk: {
+                color: { background: '#10B981', border: '#059669' },
+                shape: 'circle',
+                size: 16
+            },
+            Entity: {
+                color: { background: '#F59E0B', border: '#D97706' },
+                shape: 'diamond',
+                size: 18
+            },
+            Concept: {
+                color: { background: '#8B5CF6', border: '#7C3AED' },
+                shape: 'square',
+                size: 18
+            },
+            Person: {
+                color: { background: '#EC4899', border: '#DB2777' },
+                shape: 'triangle',
+                size: 18
+            },
+            Organization: {
+                color: { background: '#6366F1', border: '#4F46E5' },
+                shape: 'triangleDown',
+                size: 18
+            },
+            Location: {
+                color: { background: '#14B8A6', border: '#0D9488' },
+                shape: 'star',
+                size: 18
+            },
+            Event: {
+                color: { background: '#F97316', border: '#EA580C' },
+                shape: 'hexagon',
+                size: 18
+            }
+        },
+        physics: {
+            enabled: false,
+            stabilization: {
+                enabled: false,
+                iterations: 0,
+                updateInterval: 0,
+                fit: false
             }
         },
         interaction: {
             hover: true,
             tooltipDelay: 200,
             zoomView: true,
-            dragView: true
+            dragView: true,
+            navigationButtons: true,
+            keyboard: true,
+            zoomSpeed: 0.5,
+            dragSpeed: 0.5,
+            hoverSpeed: 0.5
+        },
+        layout: {
+            improvedLayout: false,
+            randomSeed: 42,
+            hierarchical: {
+                enabled: false
+            }
+        },
+        manipulation: {
+            enabled: false
         }
     };
     
@@ -447,9 +630,11 @@ function renderGraph(graphData) {
         if (params.nodes.length > 0) {
             const nodeId = params.nodes[0];
             const node = nodes.get(nodeId);
-            if (node.title) {
-                showStatus(node.title, STATUS_TYPES.INFO);
-            }
+            showNodeDetails(node);
+        } else if (params.edges.length > 0) {
+            const edgeId = params.edges[0];
+            const edge = edges.get(edgeId);
+            showRelationshipDetails(edge);
         }
     });
 
@@ -461,4 +646,192 @@ function renderGraph(graphData) {
     network.on('blurNode', function(params) {
         document.body.style.cursor = 'default';
     });
+
+    // Add double click event to focus on node
+    network.on('doubleClick', function(params) {
+        if (params.nodes.length > 0) {
+            network.focus(params.nodes[0], {
+                scale: 1.5,
+                animation: true
+            });
+        }
+    });
+
+    // Add stabilization progress event
+    network.on('stabilizationProgress', function(params) {
+        const loadingElement = document.querySelector('.graph-loading');
+        if (loadingElement) {
+            loadingElement.querySelector('span').textContent = `Stabilizing graph: ${Math.round(params.iterations / params.total * 100)}%`;
+        }
+    });
+
+    // Add stabilization complete event
+    network.on('stabilizationIterationsDone', function() {
+        const loadingElement = document.querySelector('.graph-loading');
+        if (loadingElement) {
+            loadingElement.style.display = 'none';
+        }
+    });
+}
+
+function createNodeTooltip(node) {
+    let tooltip = `<strong>${node.label}</strong><br>Type: ${node.type}`;
+    
+    if (node.properties && Object.keys(node.properties).length > 0) {
+        tooltip += '<br><br><strong>Properties:</strong><br>';
+        for (const [key, value] of Object.entries(node.properties)) {
+            if (value !== null && value !== undefined) {
+                const formattedValue = typeof value === 'object' ? JSON.stringify(value) : value;
+                tooltip += `${key}: ${formattedValue}<br>`;
+            }
+        }
+    }
+    
+    return tooltip;
+}
+
+function createRelationshipTooltip(rel) {
+    let tooltip = `<strong>${rel.type}</strong>`;
+    
+    if (rel.properties && Object.keys(rel.properties).length > 0) {
+        tooltip += '<br><br><strong>Properties:</strong><br>';
+        for (const [key, value] of Object.entries(rel.properties)) {
+            if (value !== null && value !== undefined) {
+                const formattedValue = typeof value === 'object' ? JSON.stringify(value) : value;
+                tooltip += `${key}: ${formattedValue}<br>`;
+            }
+        }
+    }
+    
+    return tooltip;
+}
+
+function showNodeDetails(node) {
+    const detailsContainer = document.getElementById('nodeDetails');
+    if (!detailsContainer) return;
+
+    let details = `
+        <div class="node-details">
+            <h3>${node.label}</h3>
+            <h4>Type: ${node.type}</h4>
+    `;
+
+    if (node.properties && Object.keys(node.properties).length > 0) {
+        details += `
+            <div class="properties-section">
+                <h4>Properties</h4>
+                <table class="properties-table">
+                    <tbody>
+        `;
+        
+        for (const [key, value] of Object.entries(node.properties)) {
+            if (value !== null && value !== undefined) {
+                const formattedValue = typeof value === 'object' ? JSON.stringify(value, null, 2) : value;
+                details += `
+                    <tr>
+                        <td class="property-key">${key}</td>
+                        <td class="property-value">${formattedValue}</td>
+                    </tr>
+                `;
+            }
+        }
+        
+        details += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    details += '</div>';
+    detailsContainer.innerHTML = details;
+    detailsContainer.style.display = 'block';
+}
+
+function showRelationshipDetails(edge) {
+    const detailsContainer = document.getElementById('nodeDetails');
+    if (!detailsContainer) return;
+
+    let details = `
+        <div class="node-details">
+            <h3>${edge.type}</h3>
+            <h4>Relationship</h4>
+    `;
+
+    if (edge.properties && Object.keys(edge.properties).length > 0) {
+        details += `
+            <div class="properties-section">
+                <h4>Properties</h4>
+                <table class="properties-table">
+                    <tbody>
+        `;
+        
+        for (const [key, value] of Object.entries(edge.properties)) {
+            if (value !== null && value !== undefined) {
+                const formattedValue = typeof value === 'object' ? JSON.stringify(value, null, 2) : value;
+                details += `
+                    <tr>
+                        <td class="property-key">${key}</td>
+                        <td class="property-value">${formattedValue}</td>
+                    </tr>
+                `;
+            }
+        }
+        
+        details += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    details += '</div>';
+    detailsContainer.innerHTML = details;
+    detailsContainer.style.display = 'block';
+}
+
+// Helper functions for node styling
+function getNodeColor(type) {
+    const colors = {
+        'Document': '#3B82F6',  // Blue
+        'Chunk': '#10B981',     // Green
+        'Entity': '#F59E0B',    // Amber
+        'Concept': '#8B5CF6',   // Purple
+        'Person': '#EC4899',    // Pink
+        'Organization': '#6366F1', // Indigo
+        'Location': '#14B8A6',  // Teal
+        'Event': '#F97316',     // Orange
+        'default': '#64748B'    // Slate
+    };
+    return colors[type] || colors.default;
+}
+
+function getNodeShape(type) {
+    const shapes = {
+        'Document': 'dot',
+        'Chunk': 'circle',
+        'Entity': 'diamond',
+        'Concept': 'square',
+        'Person': 'triangle',
+        'Organization': 'triangleDown',
+        'Location': 'star',
+        'Event': 'hexagon',
+        'default': 'dot'
+    };
+    return shapes[type] || shapes.default;
+}
+
+function getNodeSize(type) {
+    const sizes = {
+        'Document': 20,
+        'Chunk': 16,
+        'Entity': 18,
+        'Concept': 18,
+        'Person': 18,
+        'Organization': 18,
+        'Location': 18,
+        'Event': 18,
+        'default': 16
+    };
+    return sizes[type] || sizes.default;
 } 
