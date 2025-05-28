@@ -5,62 +5,12 @@ This application implements a Retrieval Augmented Generation (RAG) system using 
 ## Prerequisites
 
 - Docker and Docker Compose
-- NVIDIA GPU with CUDA support (optional, but recommended for better performance)
-- NVIDIA Container Toolkit (if using GPU)
 - Or alternatively:
   - Python 3.8+
   - Neo4j Database (version 5.17.0)
   - Ollama (for LLM and embeddings)
   - Minimum 4GB RAM recommended for running all services
-  - NVIDIA GPU with CUDA support (optional)
 
-## GPU Support
-
-The application supports GPU acceleration for both the API service and Ollama:
-
-1. **Requirements**:
-   - NVIDIA GPU with CUDA support
-   - NVIDIA drivers installed on the host system
-   - NVIDIA Container Toolkit installed
-
-2. **Installation**:
-   ```bash
-   # Install NVIDIA Container Toolkit
-   distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
-   curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
-   curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
-   sudo apt-get update
-   sudo apt-get install -y nvidia-docker2
-   sudo systemctl restart docker
-   ```
-
-3. **Verification**:
-   ```bash
-   # Test NVIDIA Docker
-   docker run --rm --gpus all nvidia/cuda:12.1.0-base-ubuntu22.04 nvidia-smi
-   ```
-
-4. **GPU Configuration**:
-   The application is configured to use GPU with the following settings:
-   - CUDA_VISIBLE_DEVICES=0
-   - OLLAMA_NUM_GPU_LAYERS=100
-   - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
-
-5. **CPU Fallback**:
-   The application will automatically fall back to CPU if no GPU is available. To explicitly force CPU mode:
-   ```bash
-   # Run with CPU only
-   CUDA_VISIBLE_DEVICES="" docker-compose up
-   ```
-
-   To check which mode is being used:
-   ```bash
-   # Check GPU usage for Ollama
-   docker exec -it basic_graph-ollama-1 nvidia-smi
-   
-   # If no GPU is available or CPU mode is forced, you'll see an error message
-   # indicating that no GPU is being used
-   ```
 
 ## Setup with Docker
 
@@ -217,7 +167,6 @@ The application consists of four main services:
 The project structure is organized as follows:
 - `app/api/`: FastAPI backend implementation
 - `app/core/`: Core functionality (database, LLM, config)
-- `app/frontend/`: Streamlit frontend application
 - `app/models/`: Data models and schemas
 - `app/utils/`: Utility functions and helpers
 
@@ -225,7 +174,6 @@ The project structure is organized as follows:
 
 Key dependencies include:
 - FastAPI 0.109.2 for the backend API
-- Streamlit 1.31.1 for the frontend interface
 - Neo4j 5.17.0 for graph database
 - Ollama for LLM and embeddings
 - PyTorch 2.2.0 with CUDA 12.1 support
