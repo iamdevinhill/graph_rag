@@ -390,6 +390,8 @@ header p {
     justify-content: space-between;
     align-items: center;
     margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .graph-header h2 {
@@ -419,6 +421,9 @@ header p {
     background-color: var(--bg-tertiary);
     color: var(--text-secondary);
     transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-icon:hover:not(:disabled) {
@@ -448,6 +453,7 @@ header p {
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .graph-loading {
@@ -456,7 +462,7 @@ header p {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(15, 23, 42, 0.8);
+    background-color: rgba(15, 23, 42, 0.9);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -487,6 +493,8 @@ header p {
     background-color: var(--bg-tertiary);
     border-radius: 6px;
     border: 1px solid var(--border-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-top: var(--spacing-sm);
 }
 
 .legend-item {
@@ -498,6 +506,13 @@ header p {
     border-radius: 4px;
     font-size: 0.875rem;
     color: var(--text-secondary);
+    transition: all 0.2s ease;
+}
+
+.legend-item:hover {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transform: translateY(-1px);
 }
 
 .legend-color {
@@ -505,6 +520,7 @@ header p {
     height: 12px;
     border-radius: 50%;
     display: inline-block;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* Vis.js Network Customization */
@@ -519,6 +535,7 @@ header p {
     flex-grow: 0 !important;
     max-height: 600px !important;
     min-height: 400px !important;
+    background-color: var(--bg-tertiary) !important;
 }
 
 .vis-network canvas {
@@ -537,32 +554,42 @@ header p {
 
 .vis-network .vis-manipulation {
     background-color: var(--bg-secondary) !important;
+    border-radius: 4px !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }
 
 .vis-network .vis-button {
     background-color: var(--bg-tertiary) !important;
     color: var(--text-secondary) !important;
     border: 1px solid var(--border-color) !important;
+    border-radius: 4px !important;
+    transition: all 0.2s ease !important;
 }
 
 .vis-network .vis-button:hover {
     background-color: var(--accent-primary) !important;
     color: var(--text-primary) !important;
+    transform: translateY(-1px) !important;
 }
 
 .vis-network .vis-navigation {
     background-color: var(--bg-secondary) !important;
+    border-radius: 4px !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }
 
 .vis-network .vis-navigation .vis-button {
     background-color: var(--bg-tertiary) !important;
     color: var(--text-secondary) !important;
     border: 1px solid var(--border-color) !important;
+    border-radius: 4px !important;
+    transition: all 0.2s ease !important;
 }
 
 .vis-network .vis-navigation .vis-button:hover {
     background-color: var(--accent-primary) !important;
     color: var(--text-primary) !important;
+    transform: translateY(-1px) !important;
 }
 
 /* Tooltip Styles */
@@ -911,4 +938,118 @@ header p {
 
 #nodeDetails::-webkit-scrollbar-thumb:hover {
     background: var(--accent-primary);
+}
+
+/* Node Details Panel */
+.node-details {
+    position: fixed;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: var(--spacing-md);
+    max-width: 400px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    z-index: 1000;
+}
+
+.node-details h3 {
+    color: var(--text-primary);
+    margin: 0 0 var(--spacing-sm) 0;
+    font-size: 1.25rem;
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.node-details h4 {
+    color: var(--text-secondary);
+    margin: var(--spacing-sm) 0;
+    font-size: 1rem;
+}
+
+.properties-section {
+    margin-top: var(--spacing-md);
+}
+
+.properties-section h4 {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: var(--spacing-sm);
+}
+
+.properties-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: var(--spacing-sm);
+}
+
+.properties-table td {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.properties-table .property-key {
+    color: var(--text-secondary);
+    font-weight: 500;
+    width: 40%;
+}
+
+.properties-table .property-value {
+    color: var(--text-primary);
+    word-break: break-word;
+}
+
+/* Custom scrollbar for node details */
+#nodeDetails::-webkit-scrollbar {
+    width: 6px;
+}
+
+#nodeDetails::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+}
+
+#nodeDetails::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+#nodeDetails::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-primary);
+}
+
+/* Graph Controls */
+.graph-controls {
+    display: flex;
+    gap: var(--spacing-xs);
+    margin-left: auto;
+}
+
+.btn-icon {
+    padding: var(--spacing-xs);
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-icon:hover {
+    background-color: var(--accent-primary);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+}
+
+.btn-icon:active {
+    transform: translateY(0);
+}
+
+.btn-icon.rotating i {
+    animation: spin 1s linear infinite;
 } 

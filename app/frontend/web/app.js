@@ -18,11 +18,13 @@ const nodeDetails = document.getElementById('nodeDetails');
 const zoomInButton = document.getElementById('zoomIn');
 const zoomOutButton = document.getElementById('zoomOut');
 const resetViewButton = document.getElementById('resetView');
+const togglePhysicsButton = document.getElementById('togglePhysics');
 
 // Initialize graph visualization
 let network = null;
 let isProcessing = false;
 let selectedFile = null;
+let physicsEnabled = true;
 
 // Status message types
 const STATUS_TYPES = {
@@ -137,6 +139,36 @@ resetViewButton.addEventListener('click', () => {
         network.fit({
             animation: true
         });
+    }
+});
+
+// Add event listener for physics toggle
+togglePhysicsButton.addEventListener('click', () => {
+    if (network) {
+        physicsEnabled = !physicsEnabled;
+        network.setOptions({
+            physics: {
+                enabled: physicsEnabled,
+                barnesHut: {
+                    gravitationalConstant: -2000,
+                    centralGravity: 0.3,
+                    springLength: 200,
+                    springConstant: 0.04,
+                    damping: 0.09,
+                    avoidOverlap: 0.1
+                },
+                stabilization: {
+                    enabled: physicsEnabled,
+                    iterations: 1000,
+                    updateInterval: 50,
+                    fit: true
+                }
+            }
+        });
+        
+        // Update button appearance
+        togglePhysicsButton.classList.toggle('active', physicsEnabled);
+        togglePhysicsButton.title = physicsEnabled ? 'Disable Physics' : 'Enable Physics';
     }
 });
 
@@ -484,19 +516,37 @@ function renderGraph(graphData) {
         label: node.label || node.name || node.title || 'Unnamed',
         title: createNodeTooltip(node),
         group: node.type || 'default',
-        color: getNodeColor(node.type),
+        color: {
+            background: getNodeColor(node.type),
+            border: getNodeBorderColor(node.type),
+            highlight: {
+                background: getNodeHighlightColor(node.type),
+                border: getNodeBorderColor(node.type)
+            },
+            hover: {
+                background: getNodeHighlightColor(node.type),
+                border: getNodeBorderColor(node.type)
+            }
+        },
         font: {
             color: '#FFFFFF',
             size: 14,
             face: 'Inter',
             strokeWidth: 2,
-            strokeColor: '#1E293B'
+            strokeColor: '#1E293B',
+            align: 'center'
         },
         shape: getNodeShape(node.type),
         size: getNodeSize(node.type),
         borderWidth: 2,
         borderWidthSelected: 3,
-        shadow: true,
+        shadow: {
+            enabled: true,
+            color: 'rgba(0,0,0,0.2)',
+            size: 10,
+            x: 5,
+            y: 5
+        },
         properties: node.properties || {}
     })));
     
@@ -506,11 +556,17 @@ function renderGraph(graphData) {
         label: rel.type,
         title: createRelationshipTooltip(rel),
         arrows: {
-            to: { enabled: true, scaleFactor: 1, type: 'arrow' }
+            to: { 
+                enabled: true, 
+                scaleFactor: 0.8, 
+                type: 'arrow',
+                color: getEdgeColor(rel.type)
+            }
         },
         color: {
-            color: '#60A5FA',
-            highlight: '#93C5FD',
+            color: getEdgeColor(rel.type),
+            highlight: getEdgeHighlightColor(rel.type),
+            hover: getEdgeHighlightColor(rel.type),
             opacity: 0.8
         },
         font: {
@@ -519,15 +575,24 @@ function renderGraph(graphData) {
             face: 'Inter',
             align: 'middle',
             strokeWidth: 2,
-            strokeColor: '#1E293B'
+            strokeColor: '#1E293B',
+            background: 'rgba(15, 23, 42, 0.8)',
+            padding: 4
         },
         smooth: {
             type: 'curvedCW',
-            roundness: 0.2
+            roundness: 0.2,
+            forceDirection: 'none'
         },
         width: 2,
         widthSelected: 3,
-        shadow: true,
+        shadow: {
+            enabled: true,
+            color: 'rgba(0,0,0,0.2)',
+            size: 10,
+            x: 5,
+            y: 5
+        },
         properties: rel.properties || {}
     })));
     
@@ -538,12 +603,29 @@ function renderGraph(graphData) {
         nodes: {
             borderWidth: 2,
             borderWidthSelected: 3,
-            shadow: true
+            shadow: true,
+            scaling: {
+                min: 16,
+                max: 32,
+                label: {
+                    enabled: true,
+                    min: 14,
+                    max: 16,
+                    maxVisible: 16
+                }
+            }
         },
         edges: {
             width: 2,
             widthSelected: 3,
-            shadow: true
+            shadow: true,
+            selectionWidth: 3,
+            hoverWidth: 3,
+            smooth: {
+                type: 'curvedCW',
+                roundness: 0.2,
+                forceDirection: 'none'
+            }
         },
         groups: {
             Document: {
@@ -588,12 +670,20 @@ function renderGraph(graphData) {
             }
         },
         physics: {
-            enabled: false,
+            enabled: physicsEnabled,
+            barnesHut: {
+                gravitationalConstant: -2000,
+                centralGravity: 0.3,
+                springLength: 200,
+                springConstant: 0.04,
+                damping: 0.09,
+                avoidOverlap: 0.1
+            },
             stabilization: {
-                enabled: false,
-                iterations: 0,
-                updateInterval: 0,
-                fit: false
+                enabled: physicsEnabled,
+                iterations: 1000,
+                updateInterval: 50,
+                fit: true
             }
         },
         interaction: {
@@ -602,13 +692,19 @@ function renderGraph(graphData) {
             zoomView: true,
             dragView: true,
             navigationButtons: true,
-            keyboard: true,
+            keyboard: {
+                enabled: true,
+                speed: { x: 10, y: 10, zoom: 0.1 }
+            },
             zoomSpeed: 0.5,
             dragSpeed: 0.5,
-            hoverSpeed: 0.5
+            hoverSpeed: 0.5,
+            multiselect: true,
+            selectable: true,
+            selectConnectedEdges: true
         },
         layout: {
-            improvedLayout: false,
+            improvedLayout: true,
             randomSeed: 42,
             hierarchical: {
                 enabled: false
@@ -619,7 +715,7 @@ function renderGraph(graphData) {
         },
         width: '100%',
         height: '100%',
-        autoResize: false,
+        autoResize: true,
         maxHeight: 600,
         minHeight: 400
     };
@@ -630,7 +726,7 @@ function renderGraph(graphData) {
     
     network = new vis.Network(container, data, options);
 
-    // Force a resize after initialization and prevent further resizing
+    // Force a resize after initialization
     setTimeout(() => {
         network.redraw();
         network.setSize('100%', '600px');
@@ -642,20 +738,38 @@ function renderGraph(graphData) {
             const nodeId = params.nodes[0];
             const node = nodes.get(nodeId);
             showNodeDetails(node);
+            
+            // Highlight connected nodes and edges
+            const connectedEdges = network.getConnectedEdges(nodeId);
+            network.selectEdges(connectedEdges);
+            
+            // Focus on the selected node
+            network.focus(nodeId, {
+                scale: 1.5,
+                animation: true
+            });
         } else if (params.edges.length > 0) {
             const edgeId = params.edges[0];
             const edge = edges.get(edgeId);
             showRelationshipDetails(edge);
+            
+            // Highlight connected nodes
+            const connectedNodes = network.getConnectedNodes(edgeId);
+            network.selectNodes(connectedNodes);
         }
     });
 
     // Add hover event for better interaction
     network.on('hoverNode', function(params) {
         document.body.style.cursor = 'pointer';
+        const nodeId = params.node;
+        const connectedEdges = network.getConnectedEdges(nodeId);
+        network.selectEdges(connectedEdges);
     });
 
     network.on('blurNode', function(params) {
         document.body.style.cursor = 'default';
+        network.unselectAll();
     });
 
     // Add double click event to focus on node
@@ -815,6 +929,44 @@ function getNodeColor(type) {
         'default': '#64748B'    // Slate
     };
     return colors[type] || colors.default;
+}
+
+function getNodeBorderColor(type) {
+    const colors = {
+        'Document': '#2563EB',  // Darker Blue
+        'Chunk': '#059669',     // Darker Green
+        'Entity': '#D97706',    // Darker Amber
+        'Concept': '#7C3AED',   // Darker Purple
+        'Person': '#DB2777',    // Darker Pink
+        'Organization': '#4F46E5', // Darker Indigo
+        'Location': '#0D9488',  // Darker Teal
+        'Event': '#EA580C',     // Darker Orange
+        'default': '#475569'    // Darker Slate
+    };
+    return colors[type] || colors.default;
+}
+
+function getNodeHighlightColor(type) {
+    const colors = {
+        'Document': '#60A5FA',  // Lighter Blue
+        'Chunk': '#34D399',     // Lighter Green
+        'Entity': '#FBBF24',    // Lighter Amber
+        'Concept': '#A78BFA',   // Lighter Purple
+        'Person': '#F472B6',    // Lighter Pink
+        'Organization': '#818CF8', // Lighter Indigo
+        'Location': '#2DD4BF',  // Lighter Teal
+        'Event': '#FB923C',     // Lighter Orange
+        'default': '#94A3B8'    // Lighter Slate
+    };
+    return colors[type] || colors.default;
+}
+
+function getEdgeColor(type) {
+    return '#60A5FA'; // Default edge color
+}
+
+function getEdgeHighlightColor(type) {
+    return '#93C5FD'; // Highlighted edge color
 }
 
 function getNodeShape(type) {
