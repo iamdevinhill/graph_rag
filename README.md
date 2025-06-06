@@ -11,16 +11,11 @@ This application implements a Retrieval Augmented Generation (RAG) system using 
   - Ollama (for LLM and embeddings)
   - Minimum 4GB RAM recommended for running all services
 
-
 ## Setup with Docker
 
 1. Build and start the containers:
 ```bash
-# With GPU (if available)
 docker-compose up --build
-
-# Or force CPU mode
-CUDA_VISIBLE_DEVICES="" docker-compose up --build
 ```
 
 2. Pull the required Ollama models (in a new terminal):
@@ -116,7 +111,7 @@ The application consists of four main services:
 
 1. **API Service**
    - FastAPI backend (port 8001)
-   - GPU-accelerated processing
+   - CPU-optimized processing
    - Health checks and monitoring
 
 2. **Frontend Service**
@@ -132,7 +127,7 @@ The application consists of four main services:
 
 4. **Ollama Service**
    - LLM and embedding service (port 11434)
-   - GPU-accelerated inference
+   - CPU-optimized inference
    - Persistent model storage
    - Automatic model loading
 
@@ -148,13 +143,11 @@ The application consists of four main services:
    - Verify models are downloaded using `ollama list`
    - Check Ollama service logs: `docker logs basic_graph-ollama-1`
    - Ensure port 11434 is accessible
-   - Verify GPU availability: `nvidia-smi`
 
 3. **Document Processing Issues**
    - Check PDF file format and size
    - Verify sufficient disk space
    - Check application logs: `docker logs basic_graph-api-1`
-   - Monitor GPU memory usage
 
 4. **Streaming Issues**
    - Check browser console for SSE connection errors
@@ -176,6 +169,6 @@ Key dependencies include:
 - FastAPI 0.109.2 for the backend API
 - Neo4j 5.17.0 for graph database
 - Ollama for LLM and embeddings
-- PyTorch 2.2.0 with CUDA 12.1 support
+- PyTorch 2.2.0 (CPU version)
 - aiohttp 3.9.3 for async HTTP requests
-- sseclient-py 1.7.2 for Server-Sent Events 
+- sseclient-py 1.7.2 for Server-Sent Events

@@ -41,7 +41,6 @@ class OllamaService:
                     "model": self.embedding_model,
                     "prompt": text,
                     "options": {
-                        "num_gpu": 1,
                         "num_thread": 4
                     }
                 }
@@ -70,7 +69,6 @@ class OllamaService:
                 "prompt": full_prompt,
                 "stream": False,
                 "options": {
-                    "num_gpu": 1,
                     "num_thread": 4,
                     "num_ctx": 4096,
                     "num_batch": 512
@@ -91,7 +89,6 @@ class OllamaService:
                     "prompt": full_prompt,
                     "stream": True,
                     "options": {
-                        "num_gpu": 1,
                         "num_thread": 4,
                         "num_ctx": 4096,
                         "num_batch": 512

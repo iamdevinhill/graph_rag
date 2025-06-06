@@ -1,12 +1,11 @@
 #!/bin/bash
 
-# Set environment variables for GPU acceleration
+# Set environment variables
 export OLLAMA_HOST=0.0.0.0
 export OLLAMA_ORIGINS=*
-export OLLAMA_GPU_LAYERS=35  # Use more GPU layers for better performance
 
-# Start Ollama in the background with GPU acceleration
-OLLAMA_GPU_LAYERS=35 ollama serve &
+# Start Ollama in the background
+ollama serve &
 
 # Wait for Ollama to be ready
 echo "Waiting for Ollama to start..."
