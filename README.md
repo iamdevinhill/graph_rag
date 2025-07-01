@@ -1,6 +1,6 @@
 # Graph RAG Application
 
-This application implements a Retrieval Augmented Generation (RAG) system using a graph database (Neo4j) for knowledge storage and retrieval. It supports PDF document processing and provides a web interface for document ingestion and querying. The application features real-time streaming responses for an interactive chat experience.
+This application implements a Retrieval Augmented Generation (RAG) system using a graph database (Neo4j) for knowledge storage and retrieval. It supports PDF and text document processing and provides a web interface for document ingestion, querying, and knowledge graph visualization. The application features real-time streaming responses for an interactive chat experience.
 
 ## Prerequisites
 
@@ -57,31 +57,33 @@ ollama pull nomic-embed-text
 uvicorn app.api.main:app --reload --port 8001
 ```
 
-6. Start the Streamlit frontend:
-```bash
-streamlit run app/frontend/app.py
-```
+6. Open the static web frontend:
+   - Open `app/frontend/web/index.html` in your browser, or
+   - Serve the `app/frontend/web/` directory using any static file server (e.g., Nginx, Python's `http.server`)
 
 ## Features
 
-- PDF document ingestion and processing
+- PDF and text document ingestion and processing
 - Document embedding and vector storage
 - Graph-based knowledge storage in Neo4j
 - Real-time streaming responses for chat
-- Semantic search capabilities
+- Semantic search capabilities (via RAG)
 - RAG-powered question answering
-- Interactive web interface
+- Interactive static web interface (HTML/JS/CSS)
 - RESTful API endpoints for programmatic access
+- Knowledge graph visualization
 
 ## API Endpoints
 
 The FastAPI backend provides the following endpoints:
 
-- `POST /api/documents/upload`: Upload and process PDF documents
-- `GET /api/documents`: List all processed documents
-- `POST /api/query`: Submit questions for RAG-based answering (supports streaming)
-- `GET /api/search`: Perform semantic search across documents
-- `GET /api/health`: Health check endpoint
+- `POST /documents`: Upload and process PDF or text documents
+- `POST /query`: Submit questions for RAG-based answering (supports streaming)
+- `GET /health`: Health check endpoint
+- `GET /graph`: Get graph data for visualization
+- `GET /`: Root endpoint with API information
+
+> **Note:** There are no `/api/documents`, `/api/search`, or `/api/documents/upload` endpoints. The `/api/` prefix is not used in the actual endpoints.
 
 ## Streaming Responses
 
@@ -93,7 +95,7 @@ The application implements Server-Sent Events (SSE) for real-time streaming of r
    - Responses are chunked and sent in real-time
 
 2. **Frontend Streaming**:
-   - Streamlit interface updates in real-time
+   - The static web interface updates in real-time
    - Progressive display of responses
    - Context display after response completion
 
@@ -145,7 +147,7 @@ The application consists of four main services:
    - Ensure port 11434 is accessible
 
 3. **Document Processing Issues**
-   - Check PDF file format and size
+   - Check PDF or text file format and size
    - Verify sufficient disk space
    - Check application logs: `docker logs basic_graph-api-1`
 
@@ -160,8 +162,8 @@ The application consists of four main services:
 The project structure is organized as follows:
 - `app/api/`: FastAPI backend implementation
 - `app/core/`: Core functionality (database, LLM, config)
-- `app/models/`: Data models and schemas
-- `app/utils/`: Utility functions and helpers
+- `app/frontend/web/`: Static web frontend (HTML, JS, CSS)
+- `app/utils/`: Utility functions and helpers (currently empty)
 
 ## Dependencies
 
@@ -172,3 +174,67 @@ Key dependencies include:
 - PyTorch 2.2.0 (CPU version)
 - aiohttp 3.9.3 for async HTTP requests
 - sseclient-py 1.7.2 for Server-Sent Events
+
+## Technical Architecture
+
+1. **Backend (FastAPI)**
+   - **Framework:**
+     - Built with FastAPI for asynchronous, high-performance REST APIs.
+   - **Endpoints:**
+     - `POST /documents`: Handles PDF and text file uploads, extracts and chunks text, and stores both content and metadata.
+     - `POST /query`: Accepts user queries, generates embeddings, performs semantic search, and streams LLM-generated responses.
+     - `GET /graph`: Exposes graph data for frontend visualization.
+     - `GET /health` and `GET /`: For health checks and API discovery.
+   - **Streaming:**
+     - Implements Server-Sent Events (SSE) for real-time, chunked response streaming to the frontend.
+   - **Concurrency:**
+     - Uses a thread pool executor for parallel document chunk processing.
+
+2. **Core Services**
+   - **LLM & Embeddings:**
+     - Integrates with Ollama for both LLM inference and embedding generation.
+     - Embeddings are used for semantic similarity search against stored document chunks.
+   - **Graph Database (Neo4j):**
+     - Stores documents, text chunks, and their relationships as nodes and edges.
+     - Schema supports metadata, chunk embeddings, and semantic relationships.
+     - Enables efficient retrieval and visualization of document knowledge graphs.
+
+3. **Frontend (Static Web App)**
+   - **Technology Stack:**
+     - Pure HTML, JavaScript, and CSS (no Streamlit).
+     - Served via Nginx in production.
+   - **Features:**
+     - Drag-and-drop document upload (PDF/TXT).
+     - Real-time chat interface for querying the knowledge base.
+     - Live streaming of LLM responses using SSE.
+     - Interactive knowledge graph visualization (using vis.js), with controls for zoom, refresh, and node inspection.
+     - Status and error feedback for robust UX.
+
+4. **Containerization & Deployment**
+   - **Dockerized Microservices:**
+     - Four main containers: FastAPI backend, Nginx frontend, Neo4j, and Ollama.
+     - Docker Compose manages orchestration, health checks, and environment configuration.
+   - **Configuration:**
+     - All service endpoints and credentials are managed via environment variables and `.env` files.
+
+## Key Functional Flows
+
+- **Document Ingestion:**
+  - User uploads a PDF or text file via the frontend.
+  - Backend extracts text, chunks it, generates embeddings, and stores all data in Neo4j.
+- **Query & Retrieval:**
+  - User submits a query.
+  - Backend generates an embedding for the query, retrieves semantically similar chunks from Neo4j, and streams a context-aware LLM response.
+- **Graph Visualization:**
+  - Frontend fetches graph data and renders an interactive visualization, allowing users to explore document relationships and semantic structure.
+
+## Design Considerations
+
+- **Separation of Concerns:**
+  - Clear modular separation between API, core logic, and frontend.
+- **Scalability:**
+  - Asynchronous processing and thread pools enable efficient handling of concurrent uploads and queries.
+- **Extensibility:**
+  - Easy to swap out LLM/embedding providers or extend the graph schema.
+- **Security & Rate Limiting:**
+  - Basic rate limiting middleware is implemented to prevent abuse.
